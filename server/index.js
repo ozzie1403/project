@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -61,6 +62,9 @@ let budgets = {
   personal: 0,
   other: 0
 };
+
+// In-memory user storage
+let users = [];
 
 // Routes
 app.get('/api/expenses', (req, res) => {
@@ -183,6 +187,42 @@ app.get('/api/resources', (req, res) => {
   ];
   
   res.json(resources);
+});
+
+// Register endpoint
+app.post('/api/users/register', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+  // Check if user exists
+  if (users.find(u => u.email === email)) {
+    return res.status(409).json({ error: 'User already exists' });
+  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  users.push({ email, passwordHash });
+  res.status(201).json({ message: 'User registered' });
+});
+
+// Login endpoint
+app.post('/api/users/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+  // Admin bypass
+  if (email === 'admin@gmail.com' && password === 'admin') {
+    return res.json({ message: 'Admin login successful', email });
+  }
+  const user = users.find(u => u.email === email);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  const match = await bcrypt.compare(password, user.passwordHash);
+  if (!match) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  res.json({ message: 'Login successful', email });
 });
 
 // Start server

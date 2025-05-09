@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DollarSign, BarChart2, BookOpen, Menu, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const { logout, user } = useAuth();
 
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: <BarChart2 className="w-5 h-5" /> },
@@ -19,6 +21,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -52,6 +59,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <span>{item.label}</span>
               </button>
             ))}
+            {user && (
+              <button
+                className="ml-4 bg-white text-primary-700 px-3 py-2 rounded-md font-semibold hover:bg-primary-100 transition-colors"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -77,6 +92,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <span>{item.label}</span>
               </button>
             ))}
+            {user && (
+              <button
+                className="mt-2 mx-4 mb-3 bg-primary-600 text-white px-3 py-2 rounded-md font-semibold hover:bg-primary-700 transition-colors"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogout();
+                }}
+              >
+                Logout
+              </button>
+            )}
           </nav>
         </div>
       )}
