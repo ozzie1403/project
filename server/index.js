@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
+import PDFDocument from 'pdfkit';
+import stream from 'stream';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -260,6 +262,51 @@ app.get('/api/analytics', (req, res) => {
   }
 
   res.json({ breakdown, topCategories, suggestion });
+});
+
+// PDF report endpoint
+app.get('/api/reports/monthly', (req, res) => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const monthlyExpenses = expenses.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  // Create PDF
+  const doc = new PDFDocument();
+  const filename = `SmartSpend_Report_${currentYear}_${currentMonth}.pdf`;
+  res.setHeader('Content-disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-type', 'application/pdf');
+
+  doc.fontSize(20).text('SmartSpend Monthly Expense Report', { align: 'center' });
+  doc.moveDown();
+  doc.fontSize(12).text(`Month: ${now.toLocaleString('default', { month: 'long' })} ${currentYear}`);
+  doc.moveDown();
+
+  if (monthlyExpenses.length === 0) {
+    doc.text('No expenses recorded for this month.');
+  } else {
+    doc.font('Helvetica-Bold').text('Date', 50, doc.y, { continued: true });
+    doc.text('Category', 150, doc.y, { continued: true });
+    doc.text('Description', 250, doc.y, { continued: true });
+    doc.text('Amount (£)', 450, doc.y);
+    doc.font('Helvetica');
+    doc.moveDown(0.5);
+    monthlyExpenses.forEach(e => {
+      doc.text(e.date, 50, doc.y, { continued: true });
+      doc.text(e.category, 150, doc.y, { continued: true });
+      doc.text(e.description || '-', 250, doc.y, { continued: true });
+      doc.text(e.amount.toFixed(2), 450, doc.y);
+    });
+    doc.moveDown();
+    const total = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
+    doc.font('Helvetica-Bold').text(`Total: £${total.toFixed(2)}`, { align: 'right' });
+  }
+
+  doc.end();
+  doc.pipe(res);
 });
 
 // Start server

@@ -123,12 +123,36 @@ const Dashboard: React.FC = () => {
     },
   };
 
+  // Download PDF report
+  const handleDownloadReport = async () => {
+    const res = await fetch('http://localhost:3001/api/reports/monthly');
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'SmartSpend_Monthly_Report.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <header>
         <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">Financial Dashboard</h1>
         <p className="text-gray-500 mt-1">Track, analyze, and improve your spending habits</p>
       </header>
+
+      <div className="flex justify-end mb-2">
+        <button
+          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors"
+          onClick={handleDownloadReport}
+        >
+          Download PDF Report
+        </button>
+      </div>
 
       {/* Analytics & Suggestions Card */}
       <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-100">
