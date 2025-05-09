@@ -48,6 +48,20 @@ let expenses = [
   }
 ];
 
+// In-memory storage for budgets
+let budgets = {
+  food: 0,
+  transportation: 0,
+  housing: 0,
+  utilities: 0,
+  entertainment: 0,
+  healthcare: 0,
+  education: 0,
+  shopping: 0,
+  personal: 0,
+  other: 0
+};
+
 // Routes
 app.get('/api/expenses', (req, res) => {
   res.json(expenses);
@@ -70,6 +84,43 @@ app.post('/api/expenses', (req, res) => {
   
   expenses.push(newExpense);
   res.status(201).json(newExpense);
+});
+
+// Get all budgets
+app.get('/api/budgets', (req, res) => {
+  res.json(budgets);
+});
+
+// Set budget for a category
+app.post('/api/budgets', (req, res) => {
+  const { category, amount } = req.body;
+  if (!category || typeof amount !== 'number') {
+    return res.status(400).json({ error: 'Category and numeric amount required' });
+  }
+  budgets[category] = amount;
+  res.json({ category, amount });
+});
+
+// Get summary: total spent per category for current month and budget
+app.get('/api/summary', (req, res) => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // JS months are 0-based
+  const currentYear = now.getFullYear();
+  const summary = {};
+  Object.keys(budgets).forEach(category => {
+    // Filter expenses for this category and current month/year
+    const spent = expenses
+      .filter(e => e.category === category &&
+        new Date(e.date).getMonth() + 1 === currentMonth &&
+        new Date(e.date).getFullYear() === currentYear)
+      .reduce((sum, e) => sum + e.amount, 0);
+    summary[category] = {
+      spent,
+      budget: budgets[category],
+      overBudget: spent > budgets[category]
+    };
+  });
+  res.json(summary);
 });
 
 // Financial Resources API endpoint
