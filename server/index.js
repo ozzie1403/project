@@ -225,6 +225,43 @@ app.post('/api/users/login', async (req, res) => {
   res.json({ message: 'Login successful', email });
 });
 
+// Advanced analytics endpoint
+app.get('/api/analytics', (req, res) => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  // Filter expenses for current month
+  const monthlyExpenses = expenses.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() + 1 === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  // Spending breakdown by category
+  const breakdown = {};
+  monthlyExpenses.forEach(e => {
+    breakdown[e.category] = (breakdown[e.category] || 0) + e.amount;
+  });
+
+  // Top 3 categories
+  const topCategories = Object.entries(breakdown)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([category, amount]) => ({ category, amount }));
+
+  // Automated savings suggestion (reduce top category by 10%)
+  let suggestion = '';
+  if (topCategories.length > 0) {
+    const top = topCategories[0];
+    const saveAmount = (top.amount * 0.1).toFixed(2);
+    suggestion = `Try reducing your spending in '${top.category}' by 10% next month to save about £${saveAmount}.`;
+  } else {
+    suggestion = 'No spending data for this month.';
+  }
+
+  res.json({ breakdown, topCategories, suggestion });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

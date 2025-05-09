@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -26,6 +26,26 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 const Dashboard: React.FC = () => {
   const { state } = useExpenses();
   const { expenses } = state;
+
+  // Analytics state
+  const [analytics, setAnalytics] = useState<{ breakdown: any, topCategories: any[], suggestion: string } | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const res = await fetch('http://localhost:3001/api/analytics');
+        const data = await res.json();
+        setAnalytics(data);
+      } catch {
+        setAnalytics(null);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, [expenses]);
 
   // Calculate total spent
   const totalSpent = expenses.reduce((acc, expense) => acc + expense.amount, 0);
@@ -109,6 +129,39 @@ const Dashboard: React.FC = () => {
         <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">Financial Dashboard</h1>
         <p className="text-gray-500 mt-1">Track, analyze, and improve your spending habits</p>
       </header>
+
+      {/* Analytics & Suggestions Card */}
+      <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-100">
+        <h2 className="text-lg font-semibold mb-2">Advanced Analytics</h2>
+        {analyticsLoading ? (
+          <p className="text-gray-500">Loading analytics...</p>
+        ) : analytics ? (
+          <>
+            <div className="mb-3">
+              <h3 className="font-medium text-gray-700 mb-1">Spending Breakdown (This Month)</h3>
+              <ul className="list-disc ml-6 text-gray-700 text-sm">
+                {Object.entries(analytics.breakdown).map(([cat, amt]) => (
+                  <li key={cat}><span className="capitalize font-semibold">{cat}:</span> £{(amt as number).toFixed(2)}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="mb-3">
+              <h3 className="font-medium text-gray-700 mb-1">Top 3 Categories</h3>
+              <ol className="list-decimal ml-6 text-gray-700 text-sm">
+                {analytics.topCategories.map((c, i) => (
+                  <li key={c.category}><span className="capitalize font-semibold">{c.category}</span>: £{c.amount.toFixed(2)}</li>
+                ))}
+              </ol>
+            </div>
+            <div className="mb-1">
+              <h3 className="font-medium text-gray-700 mb-1">Automated Savings Suggestion</h3>
+              <p className="text-green-700 text-sm">{analytics.suggestion}</p>
+            </div>
+          </>
+        ) : (
+          <p className="text-error-600">Failed to load analytics.</p>
+        )}
+      </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

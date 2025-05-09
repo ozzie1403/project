@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DollarSign } from 'lucide-react';
 
 const BudgetStatusCard: React.FC = () => {
   // Mockup budget data
-  const budget = 2500;
+  const [budget, setBudget] = useState(2500);
+  const [editing, setEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(budget);
   const spent = 1680;
   const remaining = budget - spent;
   const percentUsed = (spent / budget) * 100;
@@ -23,6 +25,11 @@ const BudgetStatusCard: React.FC = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
+  };
+
+  const handleSave = () => {
+    setBudget(inputValue);
+    setEditing(false);
   };
 
   return (
@@ -53,7 +60,18 @@ const BudgetStatusCard: React.FC = () => {
         <div className="text-center p-3 bg-gray-50 rounded-lg">
           <p className="text-gray-500 text-sm">Total Budget</p>
           <p className="text-xl font-display font-semibold text-gray-800">
-            {formatCurrency(budget)}
+            {editing ? (
+              <input
+                type="number"
+                value={inputValue}
+                onChange={e => setInputValue(Number(e.target.value))}
+                className="border rounded px-2 py-1 w-24 text-center"
+                min={0}
+                autoFocus
+              />
+            ) : (
+              formatCurrency(budget)
+            )}
           </p>
         </div>
         <div className="text-center p-3 bg-gray-50 rounded-lg">
@@ -66,9 +84,29 @@ const BudgetStatusCard: React.FC = () => {
         </div>
       </div>
       
-      <button className="w-full mt-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm flex items-center justify-center">
-        <span>Adjust Budget</span>
-      </button>
+      {editing ? (
+        <div className="flex gap-2 mt-4">
+          <button
+            className="flex-1 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm"
+            onClick={handleSave}
+          >
+            Save
+          </button>
+          <button
+            className="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors duration-200 font-medium text-sm"
+            onClick={() => setEditing(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          className="w-full mt-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm flex items-center justify-center"
+          onClick={() => setEditing(true)}
+        >
+          <span>Adjust Budget</span>
+        </button>
+      )}
     </div>
   );
 };
